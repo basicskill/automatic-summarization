@@ -6,6 +6,8 @@ import pickle
 from collections import OrderedDict
 import tensorflow as tf
 import time
+import concurrent.futures
+from multiprocessing import Pool
 
 """
 Parameters of network
@@ -23,6 +25,32 @@ br_reg = np.array([])
 bt_reg = np.array([])
 bp_reg = np.array([])
 
+
+def loss_fromGraph(input):
+    print("in")
+    inf, tree, lossf, sess = input
+    sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
+    # assert sentence_raw_tensor.shape.as_list() == [14, ]
+    sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
+    # assert isinstance(sentence_raw_tensor, tf.Tensor)
+
+    feature_dic, salience_dic = inf(tree.root, sentence_raw_tensor=sentence_raw_tensor)
+    print("inf done")
+    calc_saliences = []
+    for key, value in salience_dic.items():
+        calc_saliences.append(value)
+    true_saliences = tree.getSaliences()
+    # c_s = calc_saliences.eval()
+    l = len(true_saliences)
+    t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
+    # c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+    loss = lossf(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+    print("out")
+    out = sess.run(loss)
+
+
+
+    return out
 
 class RNN():
 
@@ -167,7 +195,7 @@ class RNN():
         :param sentence_raw_tensor:
         :return: feature_tensors_dict, salience_tensors_dict
         """
-        # print("KURAC")
+        #print("KURAC")
         feature_tensors_dict = OrderedDict()
         salience_tensors_dict = OrderedDict()
 
@@ -250,6 +278,7 @@ class RNN():
         Wr3 = None
         Wt = None
         Wp = None
+        print("LOSS")
         with tf.variable_scope("REGRESSION", reuse=True):
             Wr1 = tf.get_variable("Wr1")
             Wr2 = tf.get_variable("Wr2")
@@ -272,9 +301,15 @@ class RNN():
 
         #cross_entropy = tf.reduce_mean(-(tf.matmul(true_salience, tf.log(calc_salience)) + tf.matmul(1-true_salience, tf.log(1-calc_salience))))
         #cross_entropy = cross_entropy / len(true_salience)
+        print(true_salience.shape, "Len of tru sal")
+        print(calc_salience.shape, "Len calc sal")
         cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=true_salience, logits=calc_salience))
+        print(cross_entropy.shape, "CE shape")
+        #print(tf.convert_to_tensor(5).shape, "SSSS")
         loss = cross_entropy + regularization * suml2norms
-        
+        print("LOSS")
+        print(loss)
+        out_loss = None
 
         return loss
 
@@ -289,6 +324,8 @@ class RNN():
 
         return train_op
 
+
+
     def run_epoch(self):
         """
         Runs training of one epoch on whole training data set and writes learned parameters of nets
@@ -296,32 +333,55 @@ class RNN():
         """
         print("USO")
         losses = []
+        tmp = range(len(self.training_data))
 
-        for idx in range(len(self.training_data)):
+        for idx in range(0, len(self.training_data)-9, 10):
             with tf.Graph().as_default():
                 with tf.Session() as sess:
                     self.add_variables()
                     init = tf.global_variables_initializer()
                     sess.run(init)
-                    tree = self.training_data[idx]
-                    sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
-                    #assert sentence_raw_tensor.shape.as_list() == [14, ]
-                    sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
-                    #assert isinstance(sentence_raw_tensor, tf.Tensor)
+                    batch_loss = 0
+                    loop = self.training_data[idx:idx + 8]
 
-                    feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
-                    calc_saliences = []
-                    for key, value in salience_dic.items():
-                        calc_saliences.append(value)
-                    true_saliences = tree.getSaliences()
-                    #c_s = calc_saliences.eval()
-                    l = len(true_saliences)
-                    t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-                    #c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
-                    loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
-                    train_op = self.optimizer(loss)
+                    cpu_cores = 8
+                    worker_tasks = []
+                    for core in range(cpu_cores):
+                        t = loop[core]
+                        worker_tasks.append([self.inference, t, self.loss, sess])
+
+                    workers = Pool(cpu_cores)
+                    worker_results = workers.map(loss_fromGraph, worker_tasks)
+
+                    for res in worker_results:
+                        batch_loss += res
+
+
+                    batch_loss = tf.convert_to_tensor(batch_loss)
+
+                    """for i in range(idx, idx + 10):
+                        tree = self.training_data[idx + i]
+                        sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
+                        #assert sentence_raw_tensor.shape.as_list() == [14, ]
+                        sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
+                        #assert isinstance(sentence_raw_tensor, tf.Tensor)
+
+                        feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
+                        calc_saliences = []
+                        for key, value in salience_dic.items():
+                            calc_saliences.append(value)
+                        true_saliences = tree.getSaliences()
+                        #c_s = calc_saliences.eval()
+                        l = len(true_saliences)
+                        t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
+                        #c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+                        loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+                        batch_loss += loss"""
+
+
+                    train_op = self.optimizer(batch_loss)
                     train_op.run()
-                    losses.append(loss)
+                    losses.append(batch_loss)
 
                     with tf.variable_scope("REGRESSION", reuse=True):
                         Wr1 = tf.get_variable("Wr1")
@@ -405,6 +465,7 @@ if __name__ == "__main__":
     #r.add_variables()
     r.load_data()
     r.training()
+    print(len(r.training_data))
 
     print("Done!")
     end = time.time()
