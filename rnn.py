@@ -12,43 +12,51 @@ from multiprocessing import Pool
 """
 Parameters of network
 """
-learning_rate = 1
+learning_rate = 0.1
 regularization = 0.0
 NO_EPOCHS = 1
 
-Wr1_reg = np.array([])
-Wr2_reg = np.array([])
-Wr3_reg = np.array([])
-Wt_reg = np.array([])
-Wp_reg = np.array([])
-br_reg = np.array([])
-bt_reg = np.array([])
-bp_reg = np.array([])
 
 
 def loss_fromGraph(input):
-    print("in")
-    inf, tree, lossf, sess = input
-    sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
-    # assert sentence_raw_tensor.shape.as_list() == [14, ]
-    sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
-    # assert isinstance(sentence_raw_tensor, tf.Tensor)
+    add_vars, inference, loss_fun, grads, tree = input
+    #with tf.Graph().as_default():
+    sess = tf.Session()
+    with sess.as_default():
+        devices = sess.list_devices()
+        for d in devices:
+            print(d.name)
 
-    feature_dic, salience_dic = inf(tree.root, sentence_raw_tensor=sentence_raw_tensor)
-    print("inf done")
-    calc_saliences = []
-    for key, value in salience_dic.items():
-        calc_saliences.append(value)
-    true_saliences = tree.getSaliences()
-    # c_s = calc_saliences.eval()
-    l = len(true_saliences)
-    t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-    # c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
-    loss = lossf(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
-    print("out")
-    out = sess.run(loss)
+        #add_vars()
+        init = tf.global_variables_initializer()
+        print("KURCINA")
 
+        sess.run(init)
+        print("Sess")
 
+        sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
+        # assert sentence_raw_tensor.shape.as_list() == [14, ]
+        sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
+        # assert isinstance(sentence_raw_tensor, tf.Tensor)
+
+        feature_dic, salience_dic = inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
+        calc_saliences = []
+        for key, value in salience_dic.items():
+            calc_saliences.append(value)
+        true_saliences = tree.getSaliences()
+        # c_s = calc_saliences.eval()
+        l = len(true_saliences)
+        t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
+        # c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+
+        loss = loss_fun(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+        gradients = grads(loss)
+        out = []
+        for grad in gradients:
+            out.append((grad[0].eval(), grad[1].eval()))
+
+    sess.close()
+    sess.reset()
 
     return out
 
@@ -60,7 +68,7 @@ class RNN():
         """
 
         data = []
-        testPercent = .8
+        testPercent = 1.0
         data_dic = 'probni/'
 
         for p_file in os.listdir(data_dic):
@@ -70,6 +78,7 @@ class RNN():
                     data.append(tree)
 
         splitIndex = int(round(testPercent * len(data)))
+        print(len(data))
 
         self.training_data = data[:splitIndex]
         self.validate_data = data[splitIndex:]
@@ -91,7 +100,7 @@ class RNN():
             Wr3 - regression matrix used for calc. salience scores with raw sentence features
             br - bias for calc. salience scores (regression process)
         """
-
+        global Wr1_reg, Wr2_reg, Wr3_reg, Wp_reg, Wt_reg, br_reg, bp_reg, bt_reg
         with tf.variable_scope('PROJECTION'):
 
             tf.get_variable('Wp', dtype=tf.float32, initializer=tf.reshape(tf.convert_to_tensor(Wp_reg, dtype=tf.float32), shape=[15, 8]))
@@ -278,7 +287,6 @@ class RNN():
         Wr3 = None
         Wt = None
         Wp = None
-        print("LOSS")
         with tf.variable_scope("REGRESSION", reuse=True):
             Wr1 = tf.get_variable("Wr1")
             Wr2 = tf.get_variable("Wr2")
@@ -301,14 +309,10 @@ class RNN():
 
         #cross_entropy = tf.reduce_mean(-(tf.matmul(true_salience, tf.log(calc_salience)) + tf.matmul(1-true_salience, tf.log(1-calc_salience))))
         #cross_entropy = cross_entropy / len(true_salience)
-        print(true_salience.shape, "Len of tru sal")
-        print(calc_salience.shape, "Len calc sal")
         cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=true_salience, logits=calc_salience))
-        print(cross_entropy.shape, "CE shape")
         #print(tf.convert_to_tensor(5).shape, "SSSS")
         loss = cross_entropy + regularization * suml2norms
-        print("LOSS")
-        print(loss)
+        #print(loss)
         out_loss = None
 
         return loss
@@ -324,6 +328,30 @@ class RNN():
 
         return train_op
 
+    def gradients(self, loss):
+        """
+        Gets gradients for specific loss
+        :param loss:
+        :return: gradients
+        """
+
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        gradients = optimizer.compute_gradients(loss)
+
+        return gradients
+
+    def apply_grad(self, grads):
+        """
+        Gets gradients for specific loss
+        :param loss:
+        :return: gradients
+        """
+
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        train_op = optimizer.apply_gradients(grads)
+
+        return train_op
+
 
 
     def run_epoch(self):
@@ -331,57 +359,139 @@ class RNN():
         Runs training of one epoch on whole training data set and writes learned parameters of nets
         :return: losses
         """
+
+        global Wr1_reg, Wr2_reg, Wr3_reg, Wp_reg, Wt_reg, br_reg, bp_reg, bt_reg
+
         print("USO")
         losses = []
         tmp = range(len(self.training_data))
 
-        for idx in range(0, len(self.training_data)-9, 10):
+        for idx in range(0, len(self.training_data), 2):
+            print("KURAC")
             with tf.Graph().as_default():
-                with tf.Session() as sess:
-                    self.add_variables()
+                self.add_variables()
+                loop = self.training_data[idx : idx + 2]
+                init = tf.global_variables_initializer()
+
+                """cpu_cores = 2
+                worker_tasks = []
+                batch_grad = []
+                batch_var = []
+                for core in range(cpu_cores):
+                    t = loop[core]
+                    worker_tasks.append([self.add_variables, self.inference, self.loss, self.gradients, t])
+
+                workers = Pool(cpu_cores)
+                worker_results = workers.map(loss_fromGraph, worker_tasks)
+                workers.close()"""
+
+                #gradients1 = None
+                #gradients2 = None
+
+
+
+
+
+                config = tf.ConfigProto(device_count={"CPU": 8},
+                                        inter_op_parallelism_threads=1,
+                                        intra_op_parallelism_threads=1)
+
+
+                tree1 = loop[0]
+                tree2 = loop[1]
+                sentence_raw_tensor1 = tf.convert_to_tensor(tree1.sentence_features, dtype=tf.float32)
+                sentence_raw_tensor1 = tf.reshape(sentence_raw_tensor1, shape=[1, 14])
+
+                feature_dic1, salience_dic1 = self.inference(tree1.root, sentence_raw_tensor=sentence_raw_tensor1)
+
+                sentence_raw_tensor2 = tf.convert_to_tensor(tree2.sentence_features, dtype=tf.float32)
+                sentence_raw_tensor2 = tf.reshape(sentence_raw_tensor2, shape=[1, 14])
+
+                feature_dic2, salience_dic2 = self.inference(tree2.root, sentence_raw_tensor=sentence_raw_tensor2)
+
+                with tf.Session(config=config) as sess:
                     init = tf.global_variables_initializer()
                     sess.run(init)
-                    batch_loss = 0
-                    loop = self.training_data[idx:idx + 8]
+                    devices = sess.list_devices()
+                    for d in devices:
+                        print(d.name)
 
-                    cpu_cores = 8
-                    worker_tasks = []
-                    for core in range(cpu_cores):
-                        t = loop[core]
-                        worker_tasks.append([self.inference, t, self.loss, sess])
+                    with tf.device("/cpu:2"):
+                        # add_vars, inference, loss_fun, grads, tree = input
+                        global gradients1
+                        # with tf.Graph().as_default():
+                        tree = loop[0]
 
-                    workers = Pool(cpu_cores)
-                    worker_results = workers.map(loss_fromGraph, worker_tasks)
+                        # add_vars()
+                        print("KURCINA")
+                        sentence_raw_tensor = tf.convert_to_tensor(tree2.sentence_features, dtype=tf.float32)
+                        sentence_raw_tensor = tf.reshape(sentence_raw_tensor2, shape=[1, 14])
 
-                    for res in worker_results:
-                        batch_loss += res
+                        feature_dic, salience_dic = self.inference(tree2.root, sentence_raw_tensor=sentence_raw_tensor)
 
 
-                    batch_loss = tf.convert_to_tensor(batch_loss)
-
-                    """for i in range(idx, idx + 10):
-                        tree = self.training_data[idx + i]
-                        sentence_raw_tensor = tf.convert_to_tensor(tree.sentence_features, dtype=tf.float32)
-                        #assert sentence_raw_tensor.shape.as_list() == [14, ]
-                        sentence_raw_tensor = tf.reshape(sentence_raw_tensor, shape=[1, 14])
-                        #assert isinstance(sentence_raw_tensor, tf.Tensor)
-
-                        feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
                         calc_saliences = []
                         for key, value in salience_dic.items():
                             calc_saliences.append(value)
                         true_saliences = tree.getSaliences()
-                        #c_s = calc_saliences.eval()
+                        # c_s = calc_saliences.eval()
                         l = len(true_saliences)
                         t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-                        #c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+                        # c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+
                         loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
-                        batch_loss += loss"""
+                        print(loss.eval())
+
+                        gradients1 = self.gradients(loss)
+                        print(gradients1[0][1])
+                        print(gradients1[0][0].eval())
+                        # out = []
+                        # for grad in gradients:
+                        #    out.append((grad[0].eval(), grad[1].eval()))
+
+                    with tf.device("/cpu:1"):
+                        # add_vars, inference, loss_fun, grads, tree = input
+                        global gradients2
+                        # with tf.Graph().as_default():
+
+                        # add_vars()
+                        #init = tf.global_variables_initializer()
+                        print("KURCINA")
+
+                        tree = loop[1]
+
+                        calc_saliences = []
+                        for key, value in salience_dic2.items():
+                            calc_saliences.append(value)
+                        true_saliences = tree.getSaliences()
+                        # c_s = calc_saliences.eval()
+                        l = len(true_saliences)
+                        t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
+                        # c_s = tf.convert_to_tensor(calc_saliences, dtype=tf.float32)
+
+                        loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+                        gradients2 = self.gradients(loss)
+
+                        # out = []
+                        # for grad in gradients:
+                        #    out.append((grad[0].eval(), grad[1].eval()))
 
 
-                    train_op = self.optimizer(batch_loss)
-                    train_op.run()
-                    losses.append(batch_loss)
+                    grads = gradients1 + gradients2
+                    #print(gradients1[0][0].eval())
+
+                    """batch_var = [Wp, bp, Wt, bt, Wr1, Wr2, Wr3, br]
+                    for i in range(len(worker_results)):
+                        if i == 0:
+                            for idx in range(len(worker_results[i])):
+                                batch_grad.append(worker_results[i][idx][0])
+                        else:
+                            for idx in range(len(worker_results[i])):
+                                batch_grad[idx] += worker_results[i][idx][0]"""
+
+                    self.apply_grad(grads)
+
+
 
                     with tf.variable_scope("REGRESSION", reuse=True):
                         Wr1 = tf.get_variable("Wr1")
@@ -453,14 +563,14 @@ class RNN():
 
 if __name__ == "__main__":
     start = time.time()
-    Wr1_reg=np.random.normal(0.0, 0.1, [8, 1])
-    Wr2_reg=np.random.normal(0.0, 0.1, [15, 1])
-    Wr3_reg=np.random.normal(0.0, 0.1, [14, 1])
-    Wt_reg=np.random.normal(0.0, 0.1, [16, 8])
-    Wp_reg=np.random.normal(0.0, 0.1, [15, 8])
-    br_reg=np.random.normal(0.0, 0.1, [1, 1])
-    bt_reg=np.random.normal(0.0, 0.1, [1, 8])
-    bp_reg=np.random.normal(0.0, 0.1, [1, 8])
+    Wr1_reg=np.random.normal(0.0, 10, [8, 1])
+    Wr2_reg=np.random.normal(0.0, 10, [15, 1])
+    Wr3_reg=np.random.normal(0.0, 10, [14, 1])
+    Wt_reg=np.random.normal(0.0, 10, [16, 8])
+    Wp_reg=np.random.normal(0.0, 10, [15, 8])
+    br_reg=np.random.normal(0.0, 10, [1, 1])
+    bt_reg=np.random.normal(0.0, 10, [1, 8])
+    bp_reg=np.random.normal(0.0, 10, [1, 8])
     r = RNN()
     #r.add_variables()
     r.load_data()
