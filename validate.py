@@ -1,11 +1,7 @@
-import numpy as np
-import os
 from tree import *
-import pickle
 from collections import OrderedDict
 import tensorflow as tf
-import sys
-
+import time
 """
 Parameters of network
 """
@@ -337,7 +333,7 @@ class RNN():
         tf.reset_default_graph()
         return out_grad, out_loss
 
-    def validate(self):
+    def validate(self, tree):
         """
         Runs validation after one epoch of training
         :return: losses
@@ -373,4 +369,47 @@ class RNN():
         tf.reset_default_graph()
         return out_loss
 
+if __name__ == "__main__":
+    start = time.time()
+    import sys
+    import pickle
 
+    args = sys.argv
+    index = int(args[1])
+    no_cpu = int(args[2])
+
+    Wp_reg = np.zeros((15, 8))
+    bp_reg = np.zeros((1, 8))
+    Wt_reg = np.zeros((16,8))
+    bt_reg = np.zeros((1, 8))
+    Wr1_reg = np.zeros((8, 1))
+    Wr2_reg = np.zeros((15, 1))
+    Wr3_reg = np.zeros((14, 1))
+    br_reg = np.zeros((1, 1))
+
+
+    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
+    Wp_reg[:] = mapwp[:]
+    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r', shape=(1, 8))
+    bp_reg[:] = mapbp[:]
+    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r', shape=(16, 8))
+    Wt_reg[:] = mapwt[:]
+    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r', shape=(1, 8))
+    bt_reg[:] = mapbt[:]
+    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r', shape=(8, 1))
+    Wr1_reg[:] = mapwr1[:]
+    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r', shape=(15, 1))
+    Wr2_reg[:] = mapwr2[:]
+    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r', shape=(14, 1))
+    Wr3_reg[:] = mapwr3[:]
+    mapbr = np.memmap("./weights/br", dtype='float32', mode='r', shape=(1, 1))
+    br_reg[:] = mapbr[:]
+
+    r = RNN()
+    i = index % no_cpu
+    tree = pickle.load(open("./"+str(index)+".pickle", "rb"))
+    loss = r.validate(tree)
+
+    maploss = np.memmap("./validation/tmp/"+str(0), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = loss
+    print(maploss)

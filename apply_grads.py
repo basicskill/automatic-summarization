@@ -1,10 +1,8 @@
-import numpy as np
-import os
 from tree import *
-import pickle
 from collections import OrderedDict
 import tensorflow as tf
-import sys
+import time
+
 
 """
 Parameters of network
@@ -270,7 +268,26 @@ class RNN():
                 self.add_variables()
                 init = tf.global_variables_initializer()
                 sess.run(init)
-                train_op = optimizer.apply_gradients(grads)
+                gradients = []
+                with tf.variable_scope("REGRESSION", reuse=True):
+                    Wr1 = tf.get_variable("Wr1")
+                    Wr2 = tf.get_variable("Wr2")
+                    Wr3 = tf.get_variable("Wr3")
+                    br = tf.get_variable("br")
+
+                with tf.variable_scope("RECURSIVE", reuse=True):
+                    Wt = tf.get_variable("Wt")
+                    bt = tf.get_variable("bt")
+
+                with tf.variable_scope("PROJECTION", reuse=True):
+                    Wp = tf.get_variable("Wp")
+                    bp = tf.get_variable("bp")
+
+                vars = [Wp, bp, Wt, bt, Wr1, Wr2, Wr3, br]
+                for i in range(len(vars)):
+                    gradients.append((tf.convert_to_tensor(grads[i], dtype=tf.float32), vars[i]))
+
+                train_op = optimizer.apply_gradients(gradients)
                 train_op.run()
 
                 with tf.variable_scope("REGRESSION", reuse=True):
@@ -337,7 +354,7 @@ class RNN():
         tf.reset_default_graph()
         return out_grad, out_loss
 
-    def validate(self):
+    def validate(self, tree):
         """
         Runs validation after one epoch of training
         :return: losses
@@ -372,5 +389,99 @@ class RNN():
 
         tf.reset_default_graph()
         return out_loss
+
+
+if __name__ == "__main__":
+    start = time.time()
+    import sys
+    import pickle
+    args = sys.argv
+    no_cpu = int(args[1])
+
+    Wp_reg = np.zeros((15, 8))
+    bp_reg = np.zeros((1, 8))
+    Wt_reg = np.zeros((16, 8))
+    bt_reg = np.zeros((1, 8))
+    Wr1_reg = np.zeros((8, 1))
+    Wr2_reg = np.zeros((15, 1))
+    Wr3_reg = np.zeros((14, 1))
+    br_reg = np.zeros((1, 1))
+
+    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
+    Wp_reg[:] = mapwp[:]
+    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r', shape=(1, 8))
+    bp_reg[:] = mapbp[:]
+    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r', shape=(16, 8))
+    Wt_reg[:] = mapwt[:]
+    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r', shape=(1, 8))
+    bt_reg[:] = mapbt[:]
+    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r+', shape=(8, 1))
+    Wr1_reg[:] = mapwr1[:]
+    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r+', shape=(15, 1))
+    Wr2_reg[:] = mapwr2[:]
+    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r+', shape=(14, 1))
+    Wr3_reg[:] = mapwr3[:]
+    mapbr = np.memmap("./weights/br", dtype='float32', mode='r+', shape=(1, 1))
+    br_reg[:] = mapbr[:]
+
+    grads = []
+    for i in range(no_cpu):
+        if i == 0:
+            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r', shape=(15, 8))
+            grads.append(mapwpg[:])
+            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            grads.append(mapbpg[:])
+            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r', shape=(16, 8))
+            grads.append(mapwtg[:])
+            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            grads.append(mapbtg[:])
+            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r', shape=(8, 1))
+            grads.append(mapwr1g[:])
+            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r', shape=(15, 1))
+            grads.append(mapwr2g[:])
+            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r', shape=(14, 1))
+            grads.append(mapwr3g[:])
+            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r', shape=(1, 1))
+            grads.append(mapbrg[:])
+        else:
+            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r', shape=(15, 8))
+            grads[0] += mapwpg[:]
+            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            grads[1] += mapbpg[:]
+            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r', shape=(16, 8))
+            grads[2] += mapwtg[:]
+            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            grads[3] += mapbtg[:]
+            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r', shape=(8, 1))
+            grads[4] += mapwr1g[:]
+            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r', shape=(15, 1))
+            grads[5] += mapwr2g[:]
+            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r', shape=(14, 1))
+            grads[6] += mapwr3g[:]
+            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r', shape=(1, 1))
+            grads[7] += mapbrg[:]
+
+    r = RNN()
+    r.apply_grad(grads)
+
+    mapwp = np.memmap("./weights/wp", dtype='float32', mode='w+', shape=(15, 8))
+    mapwp[:] = Wp_reg[:]
+    mapbp = np.memmap("./weights/bp", dtype='float32', mode='w+', shape=(1, 8))
+    mapbp[:] = bp_reg[:]
+    mapwt = np.memmap("./weights/wt", dtype='float32', mode='w+', shape=(16, 8))
+    mapwt[:] = Wt_reg[:]
+    mapbt = np.memmap("./weights/bt", dtype='float32', mode='w+', shape=(1, 8))
+    mapbt[:] = bt_reg[:]
+    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='w+', shape=(8, 1))
+    mapwr1[:] = Wr1_reg[:]
+    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='w+', shape=(15, 1))
+    mapwr2[:] = Wr2_reg[:]
+    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='w+', shape=(14, 1))
+    mapwr3[:] = Wr3_reg[:]
+    mapbr = np.memmap("./weights/br", dtype='float32', mode='w+', shape=(1, 1))
+    mapbr[:] = br_reg[:]
+
+    end = time.time()
+
 
 

@@ -1,10 +1,7 @@
-import numpy as np
-import os
+import time
 from tree import *
-import pickle
 from collections import OrderedDict
 import tensorflow as tf
-import sys
 
 """
 Parameters of network
@@ -317,8 +314,15 @@ class RNN():
                 try:
                     feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
                 except:
-                    print()
-                    return
+                    Wp_g = np.zeros((15, 8))
+                    bp_g = np.zeros((1, 8))
+                    Wt_g = np.zeros((16, 8))
+                    bt_g = np.zeros((1, 8))
+                    Wr1_g = np.zeros((8, 1))
+                    Wr2_g = np.zeros((15, 1))
+                    Wr3_g = np.zeros((14, 1))
+                    br_g = np.zeros((1, 1))
+                    return [Wp_g, bp_g, Wt_g, bt_g, Wr1_g, Wr2_g, Wr3_g, br_g], np.array()
 
                 calc_saliences = []
                 for key, value in salience_dic.items():
@@ -330,14 +334,14 @@ class RNN():
                 grads = self.gradients(loss)
 
                 for grad in grads:
-                    out_grad.append(grad[0].eval)
+                    out_grad.append(grad[0].eval())
 
                 out_loss = loss.eval()
 
         tf.reset_default_graph()
         return out_grad, out_loss
 
-    def validate(self):
+    def validate(self, tree):
         """
         Runs validation after one epoch of training
         :return: losses
@@ -373,4 +377,67 @@ class RNN():
         tf.reset_default_graph()
         return out_loss
 
+
+if __name__ == "__main__":
+    start = time.time()
+    import sys
+    import pickle
+    args = sys.argv
+    index = int(args[1])
+    no_cpu = int(args[2])
+
+    Wp_reg = np.zeros((15, 8))
+    bp_reg = np.zeros((1, 8))
+    Wt_reg = np.zeros((16,8))
+    bt_reg = np.zeros((1, 8))
+    Wr1_reg = np.zeros((8, 1))
+    Wr2_reg = np.zeros((15, 1))
+    Wr3_reg = np.zeros((14, 1))
+    br_reg = np.zeros((1, 1))
+
+
+    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
+    Wp_reg[:] = mapwp[:]
+    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r', shape=(1, 8))
+    bp_reg[:] = mapbp[:]
+    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r', shape=(16, 8))
+    Wt_reg[:] = mapwt[:]
+    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r', shape=(1, 8))
+    bt_reg[:] = mapbt[:]
+    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r', shape=(8, 1))
+    Wr1_reg[:] = mapwr1[:]
+    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r', shape=(15, 1))
+    Wr2_reg[:] = mapwr2[:]
+    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r', shape=(14, 1))
+    Wr3_reg[:] = mapwr3[:]
+    mapbr = np.memmap("./weights/br", dtype='float32', mode='r', shape=(1, 1))
+    br_reg[:] = mapbr[:]
+
+
+    r = RNN()
+    tree = pickle.load(open("./"+str(index)+".pickle", "rb"))
+    out_grad, out_loss = r.run(tree)
+
+    i = index % no_cpu
+
+    mapwpg = np.memmap("./batch/wp"+str(i), dtype='float32', mode='w+', shape=(15, 8))
+    mapwpg[:] = out_grad[0]
+    mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='w+', shape=(1, 8))
+    mapbpg[:] = out_grad[1]
+    mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='w+', shape=(16, 8))
+    mapwtg[:] = out_grad[2]
+    mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='w+', shape=(1, 8))
+    mapbtg[:] = out_grad[3]
+    mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='w+', shape=(8, 1))
+    mapwr1g[:] = out_grad[4]
+    mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='w+', shape=(15, 1))
+    mapwr2g[:] = out_grad[5]
+    mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='w+', shape=(14, 1))
+    mapwr3g[:] = out_grad[6]
+    mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='w+', shape=(1, 1))
+    mapbrg[:] = out_grad[7]
+
+
+    end = time.time()
+    #print(end - start)
 
