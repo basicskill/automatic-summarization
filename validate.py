@@ -412,4 +412,3 @@ if __name__ == "__main__":
 
     maploss = np.memmap("./validation/tmp/"+str(0), dtype='float32', mode='w+', shape=(1))
     maploss[:] = loss
-    print(maploss)

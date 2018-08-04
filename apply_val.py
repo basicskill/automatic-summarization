@@ -10,9 +10,14 @@ if __name__ == "__main__":
 
     for i in range(no_cpu):
         maploss = np.memmap("./validation/tmp/" + str(0), dtype='float32', mode='r', shape=())
-        print(maploss)
         loss += maploss
     loss = loss/no_cpu
-    print(loss)
     with open("./validation/losses", 'a') as f:
         np.savetxt(f, np.array([loss]))
+
+
+
+
+
+
+
