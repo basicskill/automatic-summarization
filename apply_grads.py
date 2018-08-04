@@ -2,6 +2,8 @@ from tree import *
 from collections import OrderedDict
 import tensorflow as tf
 import time
+import os
+from shutil import rmtree
 
 
 """
@@ -406,6 +408,15 @@ if __name__ == "__main__":
     Wr2_reg = np.zeros((15, 1))
     Wr3_reg = np.zeros((14, 1))
     br_reg = np.zeros((1, 1))
+
+    if os.path.exists('./weights/'): rmtree('./weights/')
+    if os.path.exists('./batch/'):   rmtree('./batch/')
+    os.mkdir('./weights/')
+    os.mkdir('./batch/')
+
+    for i in ['wp', 'bp', 'wt', 'bt', 'wr1', 'wr2', 'wr3', 'br']:
+        os.mknod('./weights/' + i)
+        os.mknod('./batch/' + i)
 
     mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
     Wp_reg[:] = mapwp[:]
