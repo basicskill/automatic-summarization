@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 import time
 from tree import *
 from collections import OrderedDict
