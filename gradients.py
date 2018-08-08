@@ -4,6 +4,9 @@ import time
 from tree import *
 from collections import OrderedDict
 import tensorflow as tf
+import numpy as np
+
+pickleFolder='data2002repikl/'
 
 """
 Parameters of network
@@ -294,6 +297,23 @@ class RNN():
                     bp = tf.get_variable("bp")
                     bp_reg = bp.eval()
 
+    def mean_diff(self, true, calc):
+        """
+        Calculate mean absolute and square difference between true salience and calucated salience in tree
+        :param true_salience:
+        :param calc_salience:
+        :return difference:
+        """
+        length = len(true)
+        out1 = 0
+        out2 = 0
+        for idx in range(length):
+            out1 += abs(true[idx] - calc[idx])
+            out2 += (true[idx] - calc[idx]) * (true[idx] - calc[idx])
+        out1 /= length
+        out2 /= length
+
+        return out1, out2
 
     def run(self, tree):
         """
@@ -327,12 +347,15 @@ class RNN():
                     return [Wp_g, bp_g, Wt_g, bt_g, Wr1_g, Wr2_g, Wr3_g, br_g], np.array()
 
                 calc_saliences = []
+                calc_sal_eval = []
                 for key, value in salience_dic.items():
                     calc_saliences.append(value)
+                    calc_sal_eval.append(value.eval())
                 true_saliences = tree.getSaliences()
                 l = len(true_saliences)
                 t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
                 loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+                diff1, diff2 = self.mean_diff(true_saliences, calc_sal_eval)
                 grads = self.gradients(loss)
 
                 for grad in grads:
@@ -341,7 +364,7 @@ class RNN():
                 out_loss = loss.eval()
 
         tf.reset_default_graph()
-        return out_grad, out_loss
+        return out_grad, out_loss, diff1, diff2
 
     def validate(self, tree):
         """
@@ -417,8 +440,8 @@ if __name__ == "__main__":
 
 
     r = RNN()
-    tree = pickle.load(open("./"+str(index)+".pickle", "rb"))
-    out_grad, out_loss = r.run(tree)
+    tree = pickle.load(open("./"+pickleFolder+str(index)+".pickle", "rb"))
+    out_grad, out_loss, diff1, diff2  = r.run(tree)
 
     i = index % no_cpu
 
@@ -439,7 +462,9 @@ if __name__ == "__main__":
     mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='w+', shape=(1, 1))
     mapbrg[:] = out_grad[7]
 
-
+    print(diff1)
+    print(diff2)
     end = time.time()
+    print("Kurac")
     #print(end - start)
 
