@@ -2,7 +2,16 @@ import time
 if __name__ == "__main__":
     start = time.time()
     import numpy as np
+    import os
 
+    if not os.path.exists('./weights/'):
+        os.mkdir('./weights/')
+    if not os.path.exists('./batch/'):
+        os.mkdir('./batch/')
+    if not os.path.exists('./validation/'):
+        os.mkdir('./validation/')
+    if not os.path.exists('./validation/tmp/'):
+        os.mkdir('./validation/tmp/')
 
     Wr1_reg = np.random.normal(0.0, 0.1, [8, 1])
     Wr2_reg = np.random.normal(0.0, 0.1, [15, 1])

@@ -3,6 +3,7 @@
 cpuNumber=$(grep -c ^processor /proc/cpuinfo)
 check=1
 workers=($(seq 1 $cpuNumber))
+# echo $workers
 
 ####
 calc=repikl1.py
@@ -22,6 +23,6 @@ while [[ $check -ne 0 ]]; do
     # echo "ding";
     # sleep 1
 done
-python $apply $cpuNumber
+python $apply $workers
 
 echo "Kraj"
