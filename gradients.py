@@ -344,7 +344,7 @@ class RNN():
                     Wr2_g = np.zeros((15, 1))
                     Wr3_g = np.zeros((14, 1))
                     br_g = np.zeros((1, 1))
-                    return [Wp_g, bp_g, Wt_g, bt_g, Wr1_g, Wr2_g, Wr3_g, br_g], np.array(), -1, -1
+                    return [Wp_g, bp_g, Wt_g, bt_g, Wr1_g, Wr2_g, Wr3_g, br_g], np.array([]), -1, -1
 
                 calc_saliences = []
                 calc_sal_eval = []

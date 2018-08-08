@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 from tree import *
 from collections import OrderedDict
 import tensorflow as tf

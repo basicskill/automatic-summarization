@@ -1,11 +1,11 @@
 #! /bin/bash
 
 #cpuNumber=$(grep -c ^processor /proc/cpuinfo) # all cpu's
-cpuNumber=3
-check=1
-workers=($(seq 1 $cpuNumber))
+cpuNumber=2
 
-for ((i=0; i<$cpuNumber; i++)) do
+workers=($(seq 0 $cpuNumber))
+
+for ((i=1; i<=$cpuNumber; i++)) do
     workers[$i]=0
 done
 
@@ -19,21 +19,37 @@ data="./data2002repikl/"
 ####
 
 fileCount=`ls data2002repikl/ | wc | awk '{print $1}'`
+((fileCount--))
 
 for ((i=0;i<$noEpoch;i++)) do
-    br=0
-    while [ $br -lt $fileCount ]; do
-        for cpu in $(seq 1 $cpuNumber); do
-            #echo kurac
-            if [ ! -e /proc/${workers[$cpu]} ] && [ $br -ne $fileCount ]; then
-                echo "Broj je: $br/$fileCount"
-                taskset $cpu ./gradients.py $br $cpuNumber & 
-                workers[$cpu]=$!
-                echo "Worker $cpu started tree $br"
-                ((br++))
-            fi
-        done
+    job=0
+    cpu=0
+    while [ $job -le $fileCount ]; do
+        let "cpu=cpu%cpuNumber+1"
+        if [ ! -e /proc/${workers[$cpu]} ]; then
+            taskset $cpu ./gradients.py $job $cpuNumber & 
+            workers[$cpu]=$!
+            echo "Worker $cpu started tree $job/$fileCount @ ${workers[$cpu]}"
+            ((job++))
+        fi
     done
+
+    echo "Waiting for workers to finish..."
+    
+    finish=0
+    cpu=0
+    while [ $finish -le $cpuNumber ]; do
+        if [ ! -e /proc/${workers[$cpu]} ]; then
+            let "cpu=cpu%cpuNumber+1"
+            ((finish++))
+        fi
+    done
+
+    echo "Applying grads..."
+    ./apply_grads.py $cpuNumber
+
 done
+
+
 
 echo "Kraj"
