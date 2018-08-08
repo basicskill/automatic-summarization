@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 from tree import *
 from collections import OrderedDict
 import tensorflow as tf
@@ -373,6 +375,7 @@ if __name__ == "__main__":
     start = time.time()
     import sys
     import pickle
+    folder='valid_set/'
 
     args = sys.argv
     index = int(args[1])
@@ -388,26 +391,26 @@ if __name__ == "__main__":
     br_reg = np.zeros((1, 1))
 
 
-    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
+    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r+', shape=(15, 8))
     Wp_reg[:] = mapwp[:]
-    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r', shape=(1, 8))
+    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r+', shape=(1, 8))
     bp_reg[:] = mapbp[:]
-    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r', shape=(16, 8))
+    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r+', shape=(16, 8))
     Wt_reg[:] = mapwt[:]
-    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r', shape=(1, 8))
+    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r+', shape=(1, 8))
     bt_reg[:] = mapbt[:]
-    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r', shape=(8, 1))
+    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r+', shape=(8, 1))
     Wr1_reg[:] = mapwr1[:]
-    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r', shape=(15, 1))
+    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r+', shape=(15, 1))
     Wr2_reg[:] = mapwr2[:]
-    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r', shape=(14, 1))
+    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r+', shape=(14, 1))
     Wr3_reg[:] = mapwr3[:]
-    mapbr = np.memmap("./weights/br", dtype='float32', mode='r', shape=(1, 1))
+    mapbr = np.memmap("./weights/br", dtype='float32', mode='r+', shape=(1, 1))
     br_reg[:] = mapbr[:]
 
     r = RNN()
     i = index % no_cpu
-    tree = pickle.load(open("./"+str(index)+".pickle", "rb"))
+    tree = pickle.load(open("./"+folder+str(index)+".pickle", "rb"))
     loss = r.validate(tree)
 
     maploss = np.memmap("./validation/tmp/"+str(0), dtype='float32', mode='w+', shape=(1))

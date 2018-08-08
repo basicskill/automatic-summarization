@@ -431,38 +431,38 @@ if __name__ == "__main__":
     grads = []
     for i in range(no_cpu):
         if i == 0:
-            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r', shape=(15, 8))
+            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r+', shape=(15, 8))
             grads.append(mapwpg[:])
-            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r+', shape=(1, 8))
             grads.append(mapbpg[:])
-            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r', shape=(16, 8))
+            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r+', shape=(16, 8))
             grads.append(mapwtg[:])
-            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r+', shape=(1, 8))
             grads.append(mapbtg[:])
-            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r', shape=(8, 1))
+            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r+', shape=(8, 1))
             grads.append(mapwr1g[:])
-            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r', shape=(15, 1))
+            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r+', shape=(15, 1))
             grads.append(mapwr2g[:])
-            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r', shape=(14, 1))
+            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r+', shape=(14, 1))
             grads.append(mapwr3g[:])
-            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r', shape=(1, 1))
+            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r+', shape=(1, 1))
             grads.append(mapbrg[:])
         else:
-            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r', shape=(15, 8))
+            mapwpg = np.memmap("./batch/wp" + str(i), dtype='float32', mode='r+', shape=(15, 8))
             grads[0] += mapwpg[:]
-            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='r+', shape=(1, 8))
             grads[1] += mapbpg[:]
-            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r', shape=(16, 8))
+            mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='r+', shape=(16, 8))
             grads[2] += mapwtg[:]
-            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r', shape=(1, 8))
+            mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='r+', shape=(1, 8))
             grads[3] += mapbtg[:]
-            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r', shape=(8, 1))
+            mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='r+', shape=(8, 1))
             grads[4] += mapwr1g[:]
-            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r', shape=(15, 1))
+            mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='r+', shape=(15, 1))
             grads[5] += mapwr2g[:]
-            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r', shape=(14, 1))
+            mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='r+', shape=(14, 1))
             grads[6] += mapwr3g[:]
-            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r', shape=(1, 1))
+            mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='r+', shape=(1, 1))
             grads[7] += mapbrg[:]
 
     r = RNN()

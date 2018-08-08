@@ -16,40 +16,73 @@ done
 #apply=apply_grads.py
 noEpoch=1
 data="./data2002repikl/"
+valid="./valid_set"
 ####
 
-fileCount=`ls data2002repikl/ | wc | awk '{print $1}'`
-((fileCount--))
+fileCount=`ls $data | wc | awk '{print $1}'`
+validCount=`ls $valid | wc | awk '{print $1}'`
 
 for ((i=0;i<$noEpoch;i++)) do
+    echo "Start of Epoch $i"
+
+    # Gradients
+
     job=0
-    cpu=0
-    while [ $job -le $fileCount ]; do
-        let "cpu=cpu%cpuNumber+1"
-        if [ ! -e /proc/${workers[$cpu]} ]; then
+    while [ $job -lt $fileCount ]; do
+        cpu=1
+        cpuNeed=$((fileCount-job > cpuNumber ? cpuNumber : fileCount-job))
+        while [ $cpu -le $cpuNeed ]; do
             taskset $cpu ./gradients.py $job $cpuNumber & 
             workers[$cpu]=$!
-            echo "Worker $cpu started tree $job/$fileCount @ ${workers[$cpu]}"
+            echo "Worker $cpu started tree $job/$((fileCount-1))"
             ((job++))
-        fi
+            ((cpu++))
+        done
+
+        echo "Waiting for workers to finish..."
+        
+        finish=0
+        cpu=1
+        while [ $finish -le $cpuNumber ]; do
+            if [ ! -e /proc/${workers[$cpu]} ]; then
+                let "cpu=cpu%cpuNumber+1"
+                ((finish++))
+            fi
+        done
+
+        echo "Applying grads..."
+        ./apply_grads.py $cpuNumber
     done
 
-    echo "Waiting for workers to finish..."
-    
-    finish=0
-    cpu=0
-    while [ $finish -le $cpuNumber ]; do
-        if [ ! -e /proc/${workers[$cpu]} ]; then
-            let "cpu=cpu%cpuNumber+1"
-            ((finish++))
-        fi
+    # Validaton 
+
+    job=0
+    while [ $job -lt $validCount ]; do
+        cpu=1
+        cpuNeed=$((validCount-job > cpuNumber ? cpuNumber : validCount-job))
+        while [ $cpu -le $cpuNeed ]; do
+            taskset $cpu ./gradients.py $job $cpuNumber & 
+            workers[$cpu]=$!
+            echo "Worker $cpu validating tree $job/$((validCount-1))"
+            ((job++))
+            ((cpu++))
+        done
+
+        echo "Waiting for workers to finish..."
+        
+        finish=0
+        cpu=1
+        while [ $finish -le $cpuNumber ]; do
+            if [ ! -e /proc/${workers[$cpu]} ]; then
+                let "cpu=cpu%cpuNumber+1"
+                ((finish++))
+            fi
+        done
+
+        echo "Applying validation..."
+        ./apply_val.py $cpuNumber
     done
-
-    echo "Applying grads..."
-    ./apply_grads.py $cpuNumber
-
 done
-
 
 
 echo "Kraj"
