@@ -1,7 +1,7 @@
 #! /bin/bash
 
 #cpuNumber=$(grep -c ^processor /proc/cpuinfo) # all cpu's
-cpuNumber=2
+cpuNumber=$1
 
 workers=($(seq 0 $cpuNumber))
 
