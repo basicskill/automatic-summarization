@@ -29,6 +29,7 @@ for ((i=0;i<$noEpoch;i++)) do
 
     job=0
     while [ $job -lt $fileCount ]; do
+        start=$SECONDS
         cpu=1
         cpuNeed=$((fileCount-job > cpuNumber ? cpuNumber : fileCount-job))
         while [ $cpu -le $cpuNeed ]; do
@@ -52,6 +53,8 @@ for ((i=0;i<$noEpoch;i++)) do
 
         echo "Applying grads..."
         ./apply_grads.py $cpuNumber
+        duration=$(( $SECONDS - $start ))
+        echo $duration
     done
 
     # Validaton 
