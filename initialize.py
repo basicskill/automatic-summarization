@@ -6,9 +6,14 @@ if __name__ == "__main__":
     import shutil
     import numpy as np
     import os
-
-    shutil.rmtree("./weights")
-    shutil.rmtree("./validation")
+    
+    if os.path.exists("./weights"):
+        shutil.rmtree("./weights")
+    if os.path.exists("./validation"):
+        shutil.rmtree("./validation")
+    if os.path.exists("./batch"):
+        shutil.rmtree("./batch")
+    
 
     if not os.path.exists('./weights/'):
         os.mkdir('./weights/')
