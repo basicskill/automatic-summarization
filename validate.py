@@ -375,7 +375,7 @@ if __name__ == "__main__":
     start = time.time()
     import sys
     import pickle
-    folder='valid_set/'
+    folder='demo/validation/'
 
     args = sys.argv
     index = int(args[1])
@@ -412,6 +412,9 @@ if __name__ == "__main__":
     i = index % no_cpu
     tree = pickle.load(open("./"+folder+str(index)+".pickle", "rb"))
     loss = r.validate(tree)
+    print(loss)
 
-    maploss = np.memmap("./validation/tmp/"+str(0), dtype='float32', mode='w+', shape=(1))
-    maploss[:] = loss
+    maploss = np.memmap("./validation/tmp/"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([loss])
+
+

@@ -3,8 +3,12 @@
 import time
 if __name__ == "__main__":
     start = time.time()
+    import shutil
     import numpy as np
     import os
+
+    shutil.rmtree("./weights")
+    shutil.rmtree("./validation")
 
     if not os.path.exists('./weights/'):
         os.mkdir('./weights/')

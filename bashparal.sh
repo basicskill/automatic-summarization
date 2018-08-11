@@ -2,6 +2,7 @@
 
 #cpuNumber=$(grep -c ^processor /proc/cpuinfo) # all cpu's
 cpuNumber=$1
+((cpuNumber--))
 
 workers=($(seq 0 $cpuNumber))
 
@@ -9,14 +10,14 @@ for ((i=1; i<=$cpuNumber; i++)) do
     workers[$i]=0
 done
 
-./initialize.py
+python3 initialize.py
 
 ####
 #calc=repikl1.py
 #apply=apply_grads.py
-noEpoch=1
-data="./data2002repikl/"
-valid="./valid_set"
+noEpoch=10
+data="./demo/training/"
+valid="./demo/validation/"
 ####
 
 fileCount=`ls $data | wc | awk '{print $1}'`
@@ -30,17 +31,17 @@ for ((i=0;i<$noEpoch;i++)) do
     job=0
     while [ $job -lt $fileCount ]; do
         start=$SECONDS
-        cpu=1
+        cpu=0
         cpuNeed=$((fileCount-job > cpuNumber ? cpuNumber : fileCount-job))
         while [ $cpu -le $cpuNeed ]; do
-            taskset $cpu ./gradients.py $job $cpuNumber & 
+            taskset -c $cpu python3 gradients.py $job $cpuNumber & 
             workers[$cpu]=$!
-            echo "Worker $cpu started tree $job/$((fileCount-1))"
+            echo -e " \t Worker $cpu started tree $job/$((fileCount-1))"
             ((job++))
             ((cpu++))
         done
 
-        echo "Waiting for workers to finish..."
+        echo -e " \t Waiting for workers to finish..."
         
         finish=0
         cpu=1
@@ -51,8 +52,8 @@ for ((i=0;i<$noEpoch;i++)) do
             fi
         done
 
-        echo "Applying grads..."
-        ./apply_grads.py $cpuNumber
+        echo -e " \t Applying grads..."
+        python3 apply_grads.py $cpuNumber
         duration=$(( $SECONDS - $start ))
         echo $duration
     done
@@ -61,17 +62,17 @@ for ((i=0;i<$noEpoch;i++)) do
 
     job=0
     while [ $job -lt $validCount ]; do
-        cpu=1
+        cpu=0
         cpuNeed=$((validCount-job > cpuNumber ? cpuNumber : validCount-job))
         while [ $cpu -le $cpuNeed ]; do
-            taskset $cpu ./gradients.py $job $cpuNumber & 
+            taskset -c $cpu python3 validate.py $job $cpuNumber & 
             workers[$cpu]=$!
-            echo "Worker $cpu validating tree $job/$((validCount-1))"
+            echo -e " \t Worker $cpu validating tree $job/$((validCount-1))"
             ((job++))
             ((cpu++))
         done
 
-        echo "Waiting for workers to finish..."
+        echo -e " \t Waiting for workers to finish..."
         
         finish=0
         cpu=1
@@ -82,8 +83,8 @@ for ((i=0;i<$noEpoch;i++)) do
             fi
         done
 
-        echo "Applying validation..."
-        ./apply_val.py $cpuNumber
+        echo -e " \t Applying validation..."
+        python3 apply_val.py $cpuNumber
     done
 done
 

@@ -11,7 +11,7 @@ if __name__ == "__main__":
     loss = 0
 
     for i in range(no_cpu):
-        maploss = np.memmap("./validation/tmp/" + str(0), dtype='float32', mode='r', shape=())
+        maploss = np.memmap("./validation/tmp/" + str(i), dtype='float32', mode='r+', shape=())
         loss += maploss
     loss = loss/no_cpu
     with open("./validation/losses", 'a') as f:

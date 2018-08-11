@@ -6,7 +6,7 @@ from collections import OrderedDict
 import tensorflow as tf
 import numpy as np
 
-pickleFolder='data2002repikl/'
+pickleFolder='demo/training/'
 
 """
 Parameters of network
@@ -462,9 +462,10 @@ if __name__ == "__main__":
     mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='w+', shape=(1, 1))
     mapbrg[:] = out_grad[7]
 
-    print(diff1)
-    print(diff2)
+    #print(diff1)
+    #print(diff2)
+    print(out_loss)
     end = time.time()
-    print("Kurac")
+    #print("Kurac")
     #print(end - start)
 
