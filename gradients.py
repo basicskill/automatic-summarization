@@ -6,7 +6,7 @@ from collections import OrderedDict
 import tensorflow as tf
 import numpy as np
 
-pickleFolder='demo/training/'
+pickleFolder='/tmp/pfedata/demo/training/'
 
 """
 Parameters of network
@@ -421,45 +421,45 @@ if __name__ == "__main__":
     br_reg = np.zeros((1, 1))
 
 
-    mapwp = np.memmap("./weights/wp", dtype='float32', mode='r', shape=(15, 8))
+    mapwp = np.memmap("/tmp/pfedata/weights/wp", dtype='float32', mode='r', shape=(15, 8))
     Wp_reg[:] = mapwp[:]
-    mapbp = np.memmap("./weights/bp", dtype='float32', mode='r', shape=(1, 8))
+    mapbp = np.memmap("/tmp/pfedata/weights/bp", dtype='float32', mode='r', shape=(1, 8))
     bp_reg[:] = mapbp[:]
-    mapwt = np.memmap("./weights/wt", dtype='float32', mode='r', shape=(16, 8))
+    mapwt = np.memmap("/tmp/pfedata/weights/wt", dtype='float32', mode='r', shape=(16, 8))
     Wt_reg[:] = mapwt[:]
-    mapbt = np.memmap("./weights/bt", dtype='float32', mode='r', shape=(1, 8))
+    mapbt = np.memmap("/tmp/pfedata/weights/bt", dtype='float32', mode='r', shape=(1, 8))
     bt_reg[:] = mapbt[:]
-    mapwr1 = np.memmap("./weights/wr1", dtype='float32', mode='r', shape=(8, 1))
+    mapwr1 = np.memmap("/tmp/pfedata/weights/wr1", dtype='float32', mode='r', shape=(8, 1))
     Wr1_reg[:] = mapwr1[:]
-    mapwr2 = np.memmap("./weights/wr2", dtype='float32', mode='r', shape=(15, 1))
+    mapwr2 = np.memmap("/tmp/pfedata/weights/wr2", dtype='float32', mode='r', shape=(15, 1))
     Wr2_reg[:] = mapwr2[:]
-    mapwr3 = np.memmap("./weights/wr3", dtype='float32', mode='r', shape=(14, 1))
+    mapwr3 = np.memmap("/tmp/pfedata/weights/wr3", dtype='float32', mode='r', shape=(14, 1))
     Wr3_reg[:] = mapwr3[:]
-    mapbr = np.memmap("./weights/br", dtype='float32', mode='r', shape=(1, 1))
+    mapbr = np.memmap("/tmp/pfedata/weights/br", dtype='float32', mode='r', shape=(1, 1))
     br_reg[:] = mapbr[:]
 
 
     r = RNN()
-    tree = pickle.load(open("./"+pickleFolder+str(index)+".pickle", "rb"))
+    tree = pickle.load(open(pickleFolder+str(index)+".pickle", "rb"))
     out_grad, out_loss, diff1, diff2  = r.run(tree)
 
     i = index % no_cpu
 
-    mapwpg = np.memmap("./batch/wp"+str(i), dtype='float32', mode='w+', shape=(15, 8))
+    mapwpg = np.memmap("/tmp/pfedata/batch/wp"+str(i), dtype='float32', mode='w+', shape=(15, 8))
     mapwpg[:] = out_grad[0]
-    mapbpg = np.memmap("./batch/bp" + str(i), dtype='float32', mode='w+', shape=(1, 8))
+    mapbpg = np.memmap("/tmp/pfedata/batch/bp" + str(i), dtype='float32', mode='w+', shape=(1, 8))
     mapbpg[:] = out_grad[1]
-    mapwtg = np.memmap("./batch/wt" + str(i), dtype='float32', mode='w+', shape=(16, 8))
+    mapwtg = np.memmap("/tmp/pfedata/batch/wt" + str(i), dtype='float32', mode='w+', shape=(16, 8))
     mapwtg[:] = out_grad[2]
-    mapbtg = np.memmap("./batch/bt" + str(i), dtype='float32', mode='w+', shape=(1, 8))
+    mapbtg = np.memmap("/tmp/pfedata/batch/bt" + str(i), dtype='float32', mode='w+', shape=(1, 8))
     mapbtg[:] = out_grad[3]
-    mapwr1g = np.memmap("./batch/wr1" + str(i), dtype='float32', mode='w+', shape=(8, 1))
+    mapwr1g = np.memmap("/tmp/pfedata/batch/wr1" + str(i), dtype='float32', mode='w+', shape=(8, 1))
     mapwr1g[:] = out_grad[4]
-    mapwr2g = np.memmap("./batch/wr2" + str(i), dtype='float32', mode='w+', shape=(15, 1))
+    mapwr2g = np.memmap("/tmp/pfedata/batch/wr2" + str(i), dtype='float32', mode='w+', shape=(15, 1))
     mapwr2g[:] = out_grad[5]
-    mapwr3g = np.memmap("./batch/wr3" + str(i), dtype='float32', mode='w+', shape=(14, 1))
+    mapwr3g = np.memmap("/tmp/pfedata/batch/wr3" + str(i), dtype='float32', mode='w+', shape=(14, 1))
     mapwr3g[:] = out_grad[6]
-    mapbrg = np.memmap("./batch/br" + str(i), dtype='float32', mode='w+', shape=(1, 1))
+    mapbrg = np.memmap("/tmp/pfedata/batch/br" + str(i), dtype='float32', mode='w+', shape=(1, 1))
     mapbrg[:] = out_grad[7]
 
     #print(diff1)
