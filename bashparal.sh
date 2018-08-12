@@ -86,8 +86,9 @@ for ((i=0;i<$noEpoch;i++)) do
         echo -e " \t Applying validation..."
         python3 apply_val.py $cpuNumber
     done
-    mkdir /tmp/pfedata/validation/$i
-    cp /tmp/pfedata/weights/* /tmp/pfedata/validation/$i/
+    mkdir ./weights
+    mkdir ./weights/$i
+    cp /tmp/pfedata/weights/* ./weights/$i/
 done
 
 
