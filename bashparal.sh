@@ -16,8 +16,8 @@ python3 initialize.py
 #calc=repikl1.py
 #apply=apply_grads.py
 noEpoch=10
-data="./demo/training/"
-valid="./demo/validation/"
+data="/tmp/pfedata/demo/training/"
+valid="/tmp/pfedata/demo/validation/"
 ####
 
 fileCount=`ls $data | wc | awk '{print $1}'`
