@@ -13,16 +13,19 @@ if __name__ == "__main__":
         shutil.rmtree("/tmp/pfedata/validation")
     if os.path.exists("/tmp/pfedata/batch"):
         shutil.rmtree("/tmp/pfedata/batch")
+    if os.path.exists("./weights"):
+        shutil.rmtree("./weights")
     
-
+    if not os.path.exists('./weights/'):
+        os.mkdir('./weights/') 
     if not os.path.exists('/tmp/pfedata/weights/'):
         os.mkdir('/tmp/pfedata/weights/')
     if not os.path.exists('/tmp/pfedata/batch/'):
         os.mkdir('/tmp/pfedata/batch/')
-    if not os.path.exists('/tmp/pfedata/validation/'):
-        os.mkdir('/tmp/pfedata/validation/')
-    if not os.path.exists('/tmp/pfedata/validation/tmp/'):
-        os.mkdir('/tmp/pfedata/validation/tmp/')
+    if not os.path.exists('./validation/'):
+        os.mkdir('./validation/')
+    if not os.path.exists('./validation/tmp/'):
+        os.mkdir('./validation/tmp/')
 
     Wr1_reg = np.random.normal(0.0, 0.1, [8, 1])
     Wr2_reg = np.random.normal(0.0, 0.1, [15, 1])

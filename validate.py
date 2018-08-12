@@ -293,6 +293,25 @@ class RNN():
                     bp = tf.get_variable("bp")
                     bp_reg = bp.eval()
 
+    def mean_diff(self, true, calc):
+        """
+        Calculate mean absolute and square difference between true salience and calucated salience in tree
+        :param true_salience:
+        :param calc_salience:
+        :return difference:
+        """
+        length = len(true)
+        out1 = 0
+        out2 = 0
+        for idx in range(length):
+            out1 += abs(true[idx] - calc[idx])
+            out2 += (true[idx] - calc[idx]) * (true[idx] - calc[idx])
+        out1 /= length
+        out2 /= length
+
+        return out1, out2
+
+
 
     def run(self, tree):
         """
@@ -359,17 +378,20 @@ class RNN():
                     return
 
                 calc_saliences = []
+                calc_sal_eval = []
                 for key, value in salience_dic.items():
                     calc_saliences.append(value)
+                    calc_sal_eval.append(value.eval())
                 true_saliences = tree.getSaliences()
                 l = len(true_saliences)
                 t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
                 loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+                diff1, diff2 = self.mean_diff(true_saliences, calc_sal_eval)
 
                 out_loss = loss.eval()
 
         tf.reset_default_graph()
-        return out_loss
+        return out_loss, diff1, diff2
 
 if __name__ == "__main__":
     start = time.time()
@@ -411,10 +433,20 @@ if __name__ == "__main__":
     r = RNN()
     i = index % no_cpu
     tree = pickle.load(open(folder+str(index)+".pickle", "rb"))
-    loss = r.validate(tree)
+    loss, diffabs, diffsqr = r.validate(tree)
     print(loss)
+    print(diffabs)
+    print(diffsqr)
 
-    maploss = np.memmap("/tmp/pfedata/validation/tmp/"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss = np.memmap("./validation/tmp/l"+str(i), dtype='float32', mode='w+', shape=(1))
     maploss[:] = np.array([loss])
+    
+    maploss = np.memmap("./validation/tmp/abs"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([diffabs])
+    
+    maploss = np.memmap("./validation/tmp/sqr"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([diffsqr])
+
+
 
 

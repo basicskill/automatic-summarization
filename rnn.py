@@ -295,6 +295,25 @@ class RNN():
                     bp = tf.get_variable("bp")
                     bp_reg = bp.eval()
 
+    def mean_diff(self, true, calc):
+        """
+        Calculate mean absolute and square difference between true salience and calucated salience in tree
+        :param true_salience:
+        :param calc_salience:
+        :return difference:
+        """
+        length = len(true)
+        out1 = 0
+        out2 = 0
+        for idx in range(length):
+            out1 += abs(true[idx] - calc[idx])
+            out2 += (true[idx] - calc[idx]) * (true[idx] - calc[idx])
+        out1 /= length
+        out2 /= length
+
+        return out1, out2
+
+
 
     def run(self, tree):
         """
