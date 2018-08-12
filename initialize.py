@@ -9,8 +9,8 @@ if __name__ == "__main__":
     
     if os.path.exists("/tmp/pfedata/weights"):
         shutil.rmtree("/tmp/pfedata/weights")
-    if os.path.exists("/tmp/pfedata/validation"):
-        shutil.rmtree("/tmp/pfedata/validation")
+    if os.path.exists("./validation"):
+        shutil.rmtree("./validation")
     if os.path.exists("/tmp/pfedata/batch"):
         shutil.rmtree("/tmp/pfedata/batch")
     if os.path.exists("./weights"):

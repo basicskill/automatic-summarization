@@ -11,7 +11,7 @@ pickleFolder='/tmp/pfedata/demo/training/'
 """
 Parameters of network
 """
-learning_rate = 0.01
+learning_rate = 0.005
 regularization = 0.1
 
 
