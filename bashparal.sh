@@ -15,7 +15,7 @@ python3 initialize.py
 ####
 #calc=repikl1.py
 #apply=apply_grads.py
-noEpoch=10
+noEpoch=30
 data="/tmp/pfedata/demo/training/"
 valid="/tmp/pfedata/demo/validation/"
 ####
