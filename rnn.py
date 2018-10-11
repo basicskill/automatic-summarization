@@ -1,10 +1,7 @@
-import numpy as np
-import os
+# import numpy as np
 from tree import *
-import pickle
 from collections import OrderedDict
 import tensorflow as tf
-import sys
 
 """
 Parameters of network
