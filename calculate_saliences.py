@@ -368,12 +368,14 @@ class RNN():
                 calc_saliences = []
                 calc_sal_eval = []
                 for key, value in salience_dic.items():
+                    print("Key: {} , Value: {}".format(key, value))
                     calc_saliences.append(value)
                     calc_sal_eval.append(value.eval())
+                time.sleep(100000)
                 true_saliences = tree.getSaliences()
                 l = len(true_saliences)
                 t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-                loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+
                 diff1, diff2 = self.mean_diff(true_saliences, calc_sal_eval)
 
                 out_loss = loss.eval()
@@ -385,24 +387,30 @@ if __name__ == "__main__":
     start = time.time()
     import sys
     import pickle
-    folder='/tmp/pfedata/demo/validation/'
 
-    args = sys.argv
-    index = int(args[1])
-    no_cpu = int(args[2])
+    folder = './validation_/'
 
-    Wp_reg = np.zeros((15, 8))
-    bp_reg = np.zeros((1, 8))
-    Wt_reg = np.zeros((16,8))
-    bt_reg = np.zeros((1, 8))
-    Wr1_reg = np.zeros((8, 1))
-    Wr2_reg = np.zeros((15, 1))
-    Wr3_reg = np.zeros((14, 1))
-    br_reg = np.zeros((1, 1))
+    if len(sys.argv) != 3:
+        print("Usage: python calculate_saliences.py index_of_folder epoch_number")
+        sys.exit()
+
+    index = int(sys.argv[1])
+    epoch_number = sys.argv[2]
+
+    weights_folder = './weights/' + epoch_number + '/'
+
+    Wp_reg = np.fromfile(weights_folder  + 'wp')
+    bp_reg = np.fromfile(weights_folder  + 'bp')
+    Wt_reg = np.fromfile(weights_folder  + 'wt')
+    bt_reg = np.fromfile(weights_folder  + 'bt')
+    Wr1_reg = np.fromfile(weights_folder + 'wr1')
+    Wr2_reg = np.fromfile(weights_folder + 'wr2')
+    Wr3_reg = np.fromfile(weights_folder + 'wr3')
+    br_reg = np.fromfile(weights_folder  + 'br')
 
     r = RNN()
     
-    tree = pickle.load(open(folder+str(index)+".pickle", "rb"))
+    tree = pickle.load(open(folder + str(index) + ".pickle", "rb"))
     loss, diffabs, diffsqr = r.validate(tree)
     print(loss)
     print(diffabs)
