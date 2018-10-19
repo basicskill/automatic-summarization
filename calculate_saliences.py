@@ -1,8 +1,9 @@
-# import numpy as np
+#! /usr/bin/python
+
 from tree import *
 from collections import OrderedDict
 import tensorflow as tf
-
+import time
 """
 Parameters of network
 """
@@ -241,18 +242,6 @@ class RNN():
 
         return loss
 
-    def gradients(self, loss):
-        """
-        Gets gradients for specific loss
-        :param loss:
-        :return: gradients
-        """
-
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-        gradients = optimizer.compute_gradients(loss)
-
-        return gradients
-
     def apply_grad(self, grads):
         """
         Gets gradients for specific loss
@@ -353,7 +342,7 @@ class RNN():
         tf.reset_default_graph()
         return out_grad, out_loss
 
-    def validate(self):
+    def validate(self, tree):
         """
         Runs validation after one epoch of training
         :return: losses
@@ -373,20 +362,56 @@ class RNN():
                 try:
                     feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
                 except:
-                    print()
+                    print("Inference didn't happen!")
                     return
 
                 calc_saliences = []
+                calc_sal_eval = []
                 for key, value in salience_dic.items():
+                    print("Key: {} , Value: {}".format(key, value))
                     calc_saliences.append(value)
+                    calc_sal_eval.append(value.eval())
+                time.sleep(100000)
                 true_saliences = tree.getSaliences()
                 l = len(true_saliences)
                 t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-                loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
+
+                diff1, diff2 = self.mean_diff(true_saliences, calc_sal_eval)
 
                 out_loss = loss.eval()
 
         tf.reset_default_graph()
-        return out_loss
+        return out_loss, diff1, diff2
 
+if __name__ == "__main__":
+    start = time.time()
+    import sys
+    import pickle
 
+    folder = './validation_/'
+
+    if len(sys.argv) != 3:
+        print("Usage: python calculate_saliences.py index_of_folder epoch_number")
+        sys.exit()
+
+    index = int(sys.argv[1])
+    epoch_number = sys.argv[2]
+
+    weights_folder = './weights/' + epoch_number + '/'
+
+    Wp_reg = np.fromfile(weights_folder  + 'wp')
+    bp_reg = np.fromfile(weights_folder  + 'bp')
+    Wt_reg = np.fromfile(weights_folder  + 'wt')
+    bt_reg = np.fromfile(weights_folder  + 'bt')
+    Wr1_reg = np.fromfile(weights_folder + 'wr1')
+    Wr2_reg = np.fromfile(weights_folder + 'wr2')
+    Wr3_reg = np.fromfile(weights_folder + 'wr3')
+    br_reg = np.fromfile(weights_folder  + 'br')
+
+    r = RNN()
+    
+    tree = pickle.load(open(folder + str(index) + ".pickle", "rb"))
+    loss, diffabs, diffsqr = r.validate(tree)
+    print(loss)
+    print(diffabs)
+    print(diffsqr)
