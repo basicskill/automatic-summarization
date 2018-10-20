@@ -22,10 +22,11 @@ def write_saliences(claster, pickle_name):
             sentence.addSalience(summs, 0.5)
     return claster
 
+pocetak = 19
 
-for idx, claster_name in enumerate(sorted(os.listdir(pickle_dir))):
+for idx, claster_name in enumerate(sorted(os.listdir(pickle_dir))[pocetak:]):
     start = time.time()
-    print("Writing saliences for: {} ({}/{})".format(claster_name, idx+1, len(os.listdir(pickle_dir))))
+    print("Writing saliences for: {} ({}/{})".format(claster_name, idx+1+pocetak, len(os.listdir(pickle_dir))))
     tt = pickle.load( open( pickle_dir+claster_name, 'rb' ) )
     tt_new = write_saliences(tt, claster_name)
     pickle.dump(tt_new, open(repickle_dir+claster_name, 'wb'))
