@@ -416,8 +416,9 @@ if __name__ == "__main__":
     if os.path.exists("./errors_val"):
         shutil.rmtree("./errors_val")
     
-    for i in range(30):
-        os.mkdir("./errors_val/")
+    for i in range(1, 10):
+        if not os.path.exists("./errors_val/"):
+            os.mkdir("./errors_val/")
 
         mapwp = np.memmap("./weights/" + str(i) + "/wp", dtype='float32', mode='r+', shape=(15, 8))
         Wp_reg[:] = mapwp[:]
