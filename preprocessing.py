@@ -50,12 +50,14 @@ if __name__ == '__main__':
     ###########
     trees_dic = sys.argv[1] + '/'
     end_location = sys.argv[2] + '/'
+    parting = 0
     ###########
 
     data = trees_dic
     
     start_whole = time.time()
-    for idx, cluster in enumerate(os.listdir(data)):
+    for idxx, cluster in enumerate(os.listdir(data)[parting:]):
+        idx = idxx + parting
         start = time.time()
         print('Processing cluster: {} ({}/{})'.format(cluster, idx+1, len(os.listdir(data))))
         trees_cluster = trees_dic + cluster

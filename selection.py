@@ -1,3 +1,4 @@
+import os
 from tree import *
 import pickle
 from scipy import spatial
@@ -8,9 +9,12 @@ import time
 
 Tsim = .6
 
-def evaluate(summerie, summerieOriginal):
+def evaluate(summerie, referenceDir):
     rog = Rouge()
-    dic = rog.get_scores(summerie, summerieOriginal)[0]
+    dic = 0
+    for summerie in os.listdir(referenceDir):
+        summ = referenceDir + '/' + summerie
+        dic = max(rog.get_scores(summerie, summ)[0]["rouge-1"]['r'], dic)
     # return dic["rouge-1"], dic["rogue-2"]
     return dic
 
@@ -133,16 +137,13 @@ def ILP(pickleF, maxCount):
     return text, wL
 
 if __name__ == '__main__':
-    with open('d061jb', 'r') as f:
+    with open('d30001t', 'r') as f:
         summ = [x.strip() for x in f.readlines()]
     summ = summ[0]
 
     for lajne in [200]:
-        t1, w1 = greedySelection('d061j.pickle', lajne)
+        print("Poco Greedy!")
+        t1, w1 = greedySelection('d30001t.pickle', lajne)
         print(evaluate(t1, summ))
         t2, w2 = ILP('d061j.pickle', lajne)
         print(evaluate(t2, summ))
-        # print(t1)
-        # print('==========================================================')
-        # print(t2)
-

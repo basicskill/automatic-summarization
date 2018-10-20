@@ -8,3 +8,8 @@ probni
 rescale200*
 log
 summaries/
+2004/ 
+validation_/
+validation/
+trees/ 
+valparal.sh
