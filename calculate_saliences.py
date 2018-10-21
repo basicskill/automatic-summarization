@@ -242,6 +242,18 @@ class RNN():
 
         return loss
 
+    def gradients(self, loss):
+        """
+        Gets gradients for specific loss
+        :param loss:
+        :return: gradients
+        """
+
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        gradients = optimizer.compute_gradients(loss)
+
+        return gradients
+
     def apply_grad(self, grads):
         """
         Gets gradients for specific loss
@@ -362,20 +374,18 @@ class RNN():
                 try:
                     feature_dic, salience_dic = self.inference(tree.root, sentence_raw_tensor=sentence_raw_tensor)
                 except:
-                    print("Inference didn't happen!")
+                    print()
                     return
 
                 calc_saliences = []
                 calc_sal_eval = []
                 for key, value in salience_dic.items():
-                    print("Key: {} , Value: {}".format(key, value))
                     calc_saliences.append(value)
                     calc_sal_eval.append(value.eval())
-                time.sleep(100000)
                 true_saliences = tree.getSaliences()
                 l = len(true_saliences)
                 t_s = tf.convert_to_tensor(true_saliences, dtype=tf.float32)
-
+                loss = self.loss(tf.reshape(t_s, shape=[l]), tf.reshape(calc_saliences, shape=[l]))
                 diff1, diff2 = self.mean_diff(true_saliences, calc_sal_eval)
 
                 out_loss = loss.eval()
@@ -387,31 +397,56 @@ if __name__ == "__main__":
     start = time.time()
     import sys
     import pickle
+    folder='/tmp/pfedata/demo/validation/'
 
-    folder = './validation_/'
+    args = sys.argv
+    index = int(args[1])
+    no_cpu = int(args[2])
 
-    if len(sys.argv) != 3:
-        print("Usage: python calculate_saliences.py index_of_folder epoch_number")
-        sys.exit()
+    Wp_reg = np.zeros((15, 8))
+    bp_reg = np.zeros((1, 8))
+    Wt_reg = np.zeros((16,8))
+    bt_reg = np.zeros((1, 8))
+    Wr1_reg = np.zeros((8, 1))
+    Wr2_reg = np.zeros((15, 1))
+    Wr3_reg = np.zeros((14, 1))
+    br_reg = np.zeros((1, 1))
 
-    index = int(sys.argv[1])
-    epoch_number = sys.argv[2]
 
-    weights_folder = './weights/' + epoch_number + '/'
-
-    Wp_reg = np.fromfile(weights_folder  + 'wp')
-    bp_reg = np.fromfile(weights_folder  + 'bp')
-    Wt_reg = np.fromfile(weights_folder  + 'wt')
-    bt_reg = np.fromfile(weights_folder  + 'bt')
-    Wr1_reg = np.fromfile(weights_folder + 'wr1')
-    Wr2_reg = np.fromfile(weights_folder + 'wr2')
-    Wr3_reg = np.fromfile(weights_folder + 'wr3')
-    br_reg = np.fromfile(weights_folder  + 'br')
+    mapwp = np.memmap("/tmp/pfedata/weights/wp", dtype='float32', mode='r+', shape=(15, 8))
+    Wp_reg[:] = mapwp[:]
+    mapbp = np.memmap("/tmp/pfedata/weights/bp", dtype='float32', mode='r+', shape=(1, 8))
+    bp_reg[:] = mapbp[:]
+    mapwt = np.memmap("/tmp/pfedata/weights/wt", dtype='float32', mode='r+', shape=(16, 8))
+    Wt_reg[:] = mapwt[:]
+    mapbt = np.memmap("/tmp/pfedata/weights/bt", dtype='float32', mode='r+', shape=(1, 8))
+    bt_reg[:] = mapbt[:]
+    mapwr1 = np.memmap("/tmp/pfedata/weights/wr1", dtype='float32', mode='r+', shape=(8, 1))
+    Wr1_reg[:] = mapwr1[:]
+    mapwr2 = np.memmap("/tmp/pfedata/weights/wr2", dtype='float32', mode='r+', shape=(15, 1))
+    Wr2_reg[:] = mapwr2[:]
+    mapwr3 = np.memmap("/tmp/pfedata/weights/wr3", dtype='float32', mode='r+', shape=(14, 1))
+    Wr3_reg[:] = mapwr3[:]
+    mapbr = np.memmap("/tmp/pfedata/weights/br", dtype='float32', mode='r+', shape=(1, 1))
+    br_reg[:] = mapbr[:]
 
     r = RNN()
-    
-    tree = pickle.load(open(folder + str(index) + ".pickle", "rb"))
+    i = index % no_cpu
+    tree = pickle.load(open(folder+str(index)+".pickle", "rb"))
     loss, diffabs, diffsqr = r.validate(tree)
     print(loss)
     print(diffabs)
     print(diffsqr)
+
+    maploss = np.memmap("./validation/tmp/l"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([loss])
+    
+    maploss = np.memmap("./validation/tmp/abs"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([diffabs])
+    
+    maploss = np.memmap("./validation/tmp/sqr"+str(i), dtype='float32', mode='w+', shape=(1))
+    maploss[:] = np.array([diffsqr])
+
+
+
+

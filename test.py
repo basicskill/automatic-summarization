@@ -275,7 +275,9 @@ if __name__ == "__main__":
     br_reg[:] = mapbr[:]
 
     r = RNN()
-    testdir = "/home/anglahel/test/"
+    # testdir = "/home/anglahel/test/"
+    testdir = sys.argv[1]
+    traindir = sys.argv[2]
     for f in os.listdir(testdir):
         print(f)
         listlisttrees = pickle.load(open(testdir+f, "rb"))
@@ -285,7 +287,7 @@ if __name__ == "__main__":
                 out = r.validate(tree)
                 tree.root.salience = out
                 print("\t" + str(tree.root.salience))
-        pickle.dump(listlisttrees, open(testdir+f+"trained", "wb"))
+        pickle.dump(listlisttrees, open(traindir+f+"trained.pickle", "wb"))
         print(testdir+f+"trained")
     """
     t = pickle.load(open("/home/anglahel/validation/1007.pickle", "rb"))
