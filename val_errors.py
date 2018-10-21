@@ -326,7 +326,6 @@ class RNN():
         global Wr1_reg, Wr2_reg, Wr3_reg, Wt_reg, Wp_reg, br_reg, bt_reg, bp_reg
         out_grad = []
         out_loss = None
-
         with tf.Graph().as_default():
             with tf.Session() as sess:
                 self.add_variables()
@@ -416,7 +415,7 @@ if __name__ == "__main__":
     if os.path.exists("./errors_val"):
         shutil.rmtree("./errors_val")
     
-    for i in range(1, 10):
+    for i in range(20, 30):
         if not os.path.exists("./errors_val/"):
             os.mkdir("./errors_val/")
 
