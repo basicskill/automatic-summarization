@@ -401,7 +401,7 @@ if __name__ == "__main__":
     start = time.time()
     import sys
     import pickle
-    folder = '/home/anglahel/data in pickles/validation/'
+    folder = './validation/'
 
 
     Wp_reg = np.zeros((15, 8))

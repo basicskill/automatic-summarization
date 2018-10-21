@@ -1,11 +1,14 @@
+"""Docstring"""
 import os
-from tree import *
+import sys
+import csv
 import pickle
 from scipy import spatial
 import numpy as np
-from pulp import *
 import rouge
 import time
+from tree import *
+from pulp import *
 
 Tsim = .6
 
@@ -137,13 +140,24 @@ def ILP(pickleF, maxCount):
     return text, wL
 
 if __name__ == '__main__':
-    with open('d30001t', 'r') as f:
-        summ = [x.strip() for x in f.readlines()]
-    summ = summ[0]
+    word_count = 100
+    pickle_dir = sys.argv[1]
+    summeries_dir = sys.argv[2]
+    text_dump = "text_dump"
+    score_file = "text_dump"
+    for idx, pickle_file in enumerate(sorted(os.listdir(pickle_dir))):
+        name = pickle_file.split('.')[0]
+        pickle_path = pickle_dir + '/' + pickle_file
+        summeries_path = summeries_dir + '/' + name
+        print("Working on claster: {} ({}/{})".format(name, idx, len(os.listdir(pickle_dir))))
+        text, word_count = greedySelection(pickle_path, word_count)
+        print("Evluating . . .")
+        score = evaluate(text, summeries_path)
+        print("Score for {} is: {}".format(name, score))
+        with open(score_file, 'a') as f:
+            dumper = csv.writer(f)
+            dumper.writerow([name, score])
+        with open(text_dump, 'a') as f:
+            f.writelines('=' * 10 + name + '=' * 10)
+            f.writelines(text)
 
-    for lajne in [200]:
-        print("Poco Greedy!")
-        t1, w1 = greedySelection('d30001t.pickle', lajne)
-        print(evaluate(t1, summ))
-        t2, w2 = ILP('d061j.pickle', lajne)
-        print(evaluate(t2, summ))
