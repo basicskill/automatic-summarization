@@ -287,8 +287,9 @@ if __name__ == "__main__":
                 print("\t" + str(tree.root.salience))
         pickle.dump(listlisttrees, open(testdir+f+"trained", "wb"))
         print(testdir+f+"trained")
-    #t = pickle.load(open("/home/anglahel/validation/1007.pickle", "rb"))
+    """
+    t = pickle.load(open("/home/anglahel/validation/1007.pickle", "rb"))
     dic = r.validate(t)
     for key, value in dic.items():
         print(key.label)
-
+    """
